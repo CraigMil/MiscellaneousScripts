@@ -124,13 +124,22 @@ def watch():
     while True:
         time.sleep(5)
         current = set(SOURCE_DIR.iterdir())
-        new_files = current - seen
+        new_files     = current - seen
+        removed_files = seen - current
         seen = current
+
         for f in sorted(new_files):
             if f.suffix.lower() in SUPPORTED_EXTS and not is_cropped(f):
                 console.print(f"[cyan]new file:[/cyan] {f.name}")
                 time.sleep(1)  # wait briefly in case file is still copying
                 crop_to_4k(f)
+
+        for f in sorted(removed_files):
+            if f.suffix.lower() in SUPPORTED_EXTS and not is_cropped(f):
+                out = output_path(f)
+                if out.exists():
+                    out.unlink()
+                    console.print(f"[yellow]removed:[/yellow] {out.name} (source deleted)")
 
 
 def main():
