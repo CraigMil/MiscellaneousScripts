@@ -98,7 +98,11 @@ def crop_to_4k(src: Path) -> Path | None:
     top   = max(0, min(cy - TV_H // 2, new_h - TV_H))
     cropped = img_pil.crop((left, top, left + TV_W, top + TV_H))
 
-    cropped.save(out, quality=95)
+    try:
+        cropped.save(out, quality=95)
+    except PermissionError:
+        console.print(f"[red]permission denied writing:[/red] {out} — check NAS write access for the mount user")
+        return None
     console.print(f"[green]cropped:[/green] {src.name} → {out.name} (focal {cx},{cy})")
     return out
 
