@@ -5,7 +5,7 @@ import sys
 from rich.console import Console
 from rich.table import Table
 
-console = Console()
+console = Console(width=300)  # prevent line-wrapping in systemd/log shipping
 
 
 def ping(host: str, count: int = 1, timeout: float = 1.0) -> bool:
