@@ -22,6 +22,9 @@ from pathlib import Path
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+import torch
+torch.backends.mkldnn.enabled = False  # KVM VMs often lack AVX2; disable oneDNN
+
 from ultralytics import YOLO
 from lib.utils import console
 
