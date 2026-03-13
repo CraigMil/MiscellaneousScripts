@@ -23,7 +23,8 @@ import numpy as np
 from PIL import Image
 from lib.utils import console
 
-IMAGE_DIR      = Path(os.environ.get("FRAME_IMAGE_DIR", "/Volumes/FastDrive/SamsungTVImageStore"))
+SOURCE_DIR     = Path(os.environ.get("FRAME_SOURCE_DIR", "/Volumes/FastDrive/SamsungTVImageStore"))
+OUTPUT_DIR     = Path(os.environ.get("FRAME_IMAGE_DIR",  "/Volumes/FastDrive/SamsungTVImageStore"))
 CROP_SUFFIX    = "_cropped"
 TV_W, TV_H     = 3840, 2160  # 4K landscape
 SUPPORTED_EXTS = {".jpg", ".jpeg", ".png"}
@@ -36,8 +37,8 @@ def is_cropped(path: Path) -> bool:
     return CROP_SUFFIX in path.stem
 
 
-def output_path(path: Path) -> Path:
-    return path.with_stem(path.stem + CROP_SUFFIX)
+def output_path(src: Path) -> Path:
+    return OUTPUT_DIR / (src.stem + CROP_SUFFIX + src.suffix)
 
 
 def detect_focal_point(img_cv) -> tuple[int, int]:
@@ -108,7 +109,7 @@ def crop_to_4k(src: Path) -> Path | None:
 
 
 def process_all():
-    images = [p for p in IMAGE_DIR.iterdir()
+    images = [p for p in SOURCE_DIR.iterdir()
               if p.suffix.lower() in SUPPORTED_EXTS and not is_cropped(p)]
     if not images:
         console.print("[yellow]No uncropped images found.[/yellow]")
@@ -118,11 +119,11 @@ def process_all():
 
 
 def watch():
-    console.print(f"[bold]Watching[/bold] {IMAGE_DIR} for new images...")
-    seen = set(IMAGE_DIR.iterdir())
+    console.print(f"[bold]Watching[/bold] {SOURCE_DIR} → {OUTPUT_DIR}")
+    seen = set(SOURCE_DIR.iterdir())
     while True:
         time.sleep(5)
-        current = set(IMAGE_DIR.iterdir())
+        current = set(SOURCE_DIR.iterdir())
         new_files = current - seen
         seen = current
         for f in sorted(new_files):
