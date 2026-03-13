@@ -18,6 +18,7 @@ sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent.parent))
 import argparse
 import json
 import os
+import random
 import time
 from pathlib import Path
 
@@ -115,23 +116,29 @@ def upload_new(tv: SamsungTVWS, state: dict) -> int:
 
 def show_image(tv: SamsungTVWS, state: dict):
     require_artmode(tv)
-    images = local_images()
     uploaded = state["uploaded"]
 
-    # Only rotate through images that have been uploaded
-    available = [img for img in images if img.name in uploaded]
+    available = list(uploaded.keys())
     if not available:
         console.print("[yellow]No uploaded images to show. Run --upload first.[/yellow]")
         return
 
-    idx = state["index"] % len(available)
-    img = available[idx]
-    content_id = uploaded[img.name]
+    # Shuffled queue: work through all images in random order before repeating
+    queue = state.get("queue", [])
+    # Rebuild queue if empty or it contains filenames no longer uploaded
+    if not queue or not all(f in uploaded for f in queue):
+        queue = available[:]
+        random.shuffle(queue)
+
+    filename = queue.pop(0)
+    state["queue"] = queue
+    content_id = uploaded[filename]
 
     art = tv.art()
     art.select_image(content_id)
     art.change_matte(content_id, matte_id="none")
-    console.print(f"[green]Showing[/green] [{idx + 1}/{len(available)}] {img.name} ({content_id})")
+    remaining = len(queue)
+    console.print(f"[green]Showing[/green] {filename} ({content_id}) — {remaining} remaining in shuffle")
 
     state["index"] = (idx + 1) % len(available)
     save_state(state)
