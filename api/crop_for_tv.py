@@ -22,7 +22,13 @@ from pathlib import Path
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+from ultralytics import YOLO
 from lib.utils import console
+
+# YOLO subject detector — person (0) and dog (16) classes
+# Model downloads automatically (~6 MB) on first use
+_YOLO = YOLO("yolov8n.pt")
+_YOLO_SUBJECTS = {0, 16}  # COCO: 0=person, 16=dog
 
 # Camera/auto-generated prefixes to strip from the start of a filename stem.
 # After stripping, whatever meaningful text remains becomes the caption.
@@ -108,10 +114,6 @@ CROP_SUFFIX    = "_cropped"
 TV_W, TV_H     = 3840, 2160  # 4K landscape
 SUPPORTED_EXTS = {".jpg", ".jpeg", ".png"}
 
-# OpenCV face detector
-_CASCADE = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
-
-
 def is_cropped(path: Path) -> bool:
     return CROP_SUFFIX in path.stem
 
@@ -121,17 +123,33 @@ def output_path(src: Path) -> Path:
 
 
 def detect_focal_point(img_cv) -> tuple[int, int]:
-    """Return (cx, cy) focal point. Uses face detection, falls back to entropy map."""
-    gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
-    faces = _CASCADE.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(60, 60))
-    if len(faces) > 0:
-        # Centre of the largest face
-        faces = sorted(faces, key=lambda f: f[2] * f[3], reverse=True)
-        x, y, w, h = faces[0]
-        return x + w // 2, y + h // 2
+    """Return (cx, cy) focal point.
 
-    # Entropy fallback: find the most visually complex region, biased toward centre
-    h, w = gray.shape
+    Priority:
+      1. YOLO subject detection (person + dog) — weighted centroid of all hits
+      2. Entropy fallback with centre bias for landscapes/abstract images
+    """
+    h, w = img_cv.shape[:2]
+
+    # 1. YOLO subject detection
+    results = _YOLO(img_cv, verbose=False)[0]
+    subjects = [
+        box for box in results.boxes
+        if int(box.cls) in _YOLO_SUBJECTS and float(box.conf) > 0.4
+    ]
+    if subjects:
+        # Weighted centroid: each box contributes proportional to its area
+        total_w, cx_sum, cy_sum = 0.0, 0.0, 0.0
+        for box in subjects:
+            x1, y1, x2, y2 = box.xyxy[0].tolist()
+            area = (x2 - x1) * (y2 - y1)
+            cx_sum += ((x1 + x2) / 2) * area
+            cy_sum += ((y1 + y2) / 2) * area
+            total_w += area
+        return int(cx_sum / total_w), int(cy_sum / total_w)
+
+    # 2. Entropy fallback with centre bias
+    gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
     block = 64
     max_dist = ((w / 2) ** 2 + (h / 2) ** 2) ** 0.5
     best_val, best_cx, best_cy = -1, w // 2, h // 2
@@ -141,7 +159,6 @@ def detect_focal_point(img_cv) -> tuple[int, int]:
             hist = cv2.calcHist([patch], [0], None, [256], [0, 256])
             hist /= hist.sum()
             entropy = -np.sum(hist * np.log2(hist + 1e-10))
-            # Apply a gentle centre bias: up to 25% penalty at the image edges
             cx, cy = col + block // 2, row + block // 2
             dist = ((cx - w / 2) ** 2 + (cy - h / 2) ** 2) ** 0.5
             weighted = entropy * (1 - 0.25 * dist / max_dist)
