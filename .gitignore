@@ -1,0 +1,4 @@
+.venv/
+api/frame_state.json
+__pycache__/
+*.pyc
