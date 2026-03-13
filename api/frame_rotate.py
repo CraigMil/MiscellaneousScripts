@@ -19,6 +19,7 @@ import argparse
 import json
 import os
 import random
+import signal
 import time
 from pathlib import Path
 
@@ -31,7 +32,8 @@ TV_IP      = "192.168.1.51"
 TV_PORT    = 8002
 _DEFAULT_IMAGE_DIR = "/Volumes/FastDrive/SamsungTVImageStore"
 IMAGE_DIR  = Path(os.environ.get("FRAME_IMAGE_DIR", _DEFAULT_IMAGE_DIR))
-TV_TIMEOUT = float(os.environ.get("FRAME_TV_TIMEOUT", "10"))
+TV_TIMEOUT        = float(os.environ.get("FRAME_TV_TIMEOUT", "10"))
+UPLOAD_TIMEOUT    = int(os.environ.get("FRAME_UPLOAD_TIMEOUT", "60"))
 STATE_FILE = Path(__file__).parent / "frame_state.json"
 TOKEN_FILE = Path(__file__).parent / "frame_token.txt"
 SUPPORTED_EXTS = {".jpg", ".jpeg", ".png"}
@@ -77,16 +79,28 @@ def local_images() -> list[Path]:
 
 
 def _upload_one(art, data: bytes) -> str:
-    """Upload image bytes, retrying once if the TV sends an unsolicited event first."""
+    """Upload image bytes, retrying once if the TV sends an unsolicited event first.
+    Raises ConnectionFailure if the upload hangs beyond UPLOAD_TIMEOUT seconds."""
+    def _timeout_handler(signum, frame):
+        raise ConnectionFailure(f"upload timed out after {UPLOAD_TIMEOUT}s")
+
     for attempt in range(2):
+        old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
+        signal.alarm(UPLOAD_TIMEOUT)
         try:
-            return art.upload(data, matte="none", portrait_matte="none")
+            result = art.upload(data, matte="none", portrait_matte="none")
+            signal.alarm(0)
+            return result
         except ConnectionFailure as e:
+            signal.alarm(0)
             msg = str(e)
             # TV sends image_selected on connect as an unsolicited event; retry once.
             if attempt == 0 and "image_selected" in msg:
                 continue
             raise
+        finally:
+            signal.signal(signal.SIGALRM, old_handler)
+            signal.alarm(0)
 
 
 def upload_new(tv: SamsungTVWS, state: dict) -> int:
