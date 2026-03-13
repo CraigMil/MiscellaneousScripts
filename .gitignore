@@ -1,4 +1,5 @@
 .venv/
 api/frame_state.json
+api/frame_rotate.log
 __pycache__/
 *.pyc
