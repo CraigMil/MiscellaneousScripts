@@ -22,7 +22,9 @@ from pathlib import Path
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+import os
 import torch
+os.environ.setdefault("TORCH_CPP_LOG_LEVEL", "ERROR")  # suppress NNPACK/hardware warnings
 torch.backends.mkldnn.enabled = False  # KVM VMs often lack AVX2; disable oneDNN
 
 from ultralytics import YOLO
