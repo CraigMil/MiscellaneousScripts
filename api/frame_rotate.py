@@ -141,7 +141,6 @@ def show_image(tv: SamsungTVWS, state: dict):
     remaining = len(queue)
     console.print(f"[green]Showing[/green] {filename} ({content_id}) — {remaining} remaining in shuffle")
 
-    state["index"] = (idx + 1) % len(available)
     save_state(state)
 
 
