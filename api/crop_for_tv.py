@@ -24,24 +24,23 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from lib.utils import console
 
-# Patterns that indicate an auto-generated camera filename with no human meaning
-_CAMERA_RE = re.compile(
+# Camera/auto-generated prefixes to strip from the start of a filename stem.
+# After stripping, whatever meaningful text remains becomes the caption.
+_CAMERA_PREFIX_RE = re.compile(
     r"^("
-    r"img_?\d+"           # IMG_1234, IMG1234
-    r"|dsc[fn]?_?\d+"     # DSC0001, DSCF0001, DSCN0001, _DSC2397
-    r"|_dsc\d+"           # _DSC2397 (Sony)
-    r"|r\d{7}"            # R0001234 (Ricoh)
-    r"|p\d{8}"            # P20240101 (Samsung)
-    r"|mvc[-_]\d+"        # MVC-001 (old Sony)
-    r"|mvi_?\d+"          # MVI_1234 (Canon video)
-    r"|vid[-_]?\d+"       # VID_20240101
-    r"|photo[-_]?\d+"     # PHOTO_001
-    r"|pic[-_]?\d+"       # PIC_001
-    r"|pano[-_]?\d+"      # PANO_001
-    r"|screenshot.*\d{4}" # screenshot_2024...
-    r"|\d+"               # purely numeric
-    r"|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}.*"  # UUID
-    r")$",
+    r"_?dsc[fn]?\d+"       # _DSC2397, DSC0001, DSCF001, DSCN001
+    r"|img_?\d+"            # IMG_1234, IMG1234
+    r"|r\d{7}"              # R0001234 (Ricoh)
+    r"|mvc[-_]\d+"          # MVC-001 (old Sony)
+    r"|mvi_?\d+"            # MVI_1234 (Canon video)
+    r"|vid[-_]?\d+"         # VID_20240101
+    r"|photo[-_]\d+"        # PHOTO_001
+    r"|pic[-_]\d+"          # PIC_001
+    r"|pano[-_]\d+"         # PANO_001
+    r"|screenshot[-_\d]*"   # screenshot_2024...
+    r"|\d{8}[-_]?\d*"       # 20161012_162701 (date/datetime stamps)
+    r"|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"  # UUID
+    r")",
     re.IGNORECASE,
 )
 
@@ -58,16 +57,17 @@ _CAPTION_FONT_SIZE = 72   # px at 4K; scales down for smaller images
 def caption_for(src: Path) -> str | None:
     """Return a human-readable caption derived from the filename, or None if meaningless."""
     stem = src.stem
-    # Strip _cropped suffix if somehow present
     if stem.endswith("_cropped"):
         stem = stem[: -len("_cropped")]
-    # Strip leading underscores / hyphens
-    stem = stem.lstrip("_-")
-    if _CAMERA_RE.match(stem):
-        return None
-    # Clean up separators and title-case
+    # Strip leading punctuation then any camera prefix, then trailing noise
+    stem = stem.lstrip("_-~")
+    stem = _CAMERA_PREFIX_RE.sub("", stem, count=1).lstrip("_-~")
+    # Strip trailing version/sync noise like v2, ~1v2, v3
+    stem = re.sub(r"[~v]\d+$", "", stem, flags=re.IGNORECASE).rstrip("_-~")
     text = re.sub(r"[-_]+", " ", stem).strip()
-    if not text:
+    # Require at least 2 words, each with 2+ letters
+    words = [w for w in text.split() if re.search(r"[a-z]{2,}", w, re.IGNORECASE)]
+    if len(words) < 2:
         return None
     return text.title()
 
