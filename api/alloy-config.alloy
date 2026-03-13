@@ -1,0 +1,20 @@
+// Grafana Alloy config — ships frame_rotate.log to local Loki
+
+local.file_match "frame_rotate" {
+  path_targets = [{
+    __path__ = "/home/craigmil/MiscellaneousScripts/api/frame_rotate.log",
+    job       = "frame_rotate",
+    host      = "grafana-vm",
+  }]
+}
+
+loki.source.file "frame_rotate" {
+  targets    = local.file_match.frame_rotate.targets
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://localhost:3100/loki/api/v1/push"
+  }
+}
