@@ -151,7 +151,6 @@ def show_image(tv: SamsungTVWS, state: dict):
 
     art = tv.art()
     art.select_image(content_id)
-    art.change_matte(content_id, matte_id="none")
     remaining = len(queue)
     console.print(f"[green]Showing[/green] {filename} ({content_id}) — {remaining} remaining in shuffle")
 
