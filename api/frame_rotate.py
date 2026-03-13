@@ -31,6 +31,7 @@ TV_IP      = "192.168.1.51"
 TV_PORT    = 8002
 _DEFAULT_IMAGE_DIR = "/Volumes/FastDrive/SamsungTVImageStore"
 IMAGE_DIR  = Path(os.environ.get("FRAME_IMAGE_DIR", _DEFAULT_IMAGE_DIR))
+TV_TIMEOUT = float(os.environ.get("FRAME_TV_TIMEOUT", "10"))
 STATE_FILE = Path(__file__).parent / "frame_state.json"
 TOKEN_FILE = Path(__file__).parent / "frame_token.txt"
 SUPPORTED_EXTS = {".jpg", ".jpeg", ".png"}
@@ -38,7 +39,7 @@ SUPPORTED_EXTS = {".jpg", ".jpeg", ".png"}
 
 
 def connect() -> SamsungTVWS:
-    return SamsungTVWS(host=TV_IP, port=TV_PORT, token_file=str(TOKEN_FILE))
+    return SamsungTVWS(host=TV_IP, port=TV_PORT, token_file=str(TOKEN_FILE), timeout=TV_TIMEOUT)
 
 
 def require_artmode(tv: SamsungTVWS):
