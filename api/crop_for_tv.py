@@ -129,9 +129,10 @@ def detect_focal_point(img_cv) -> tuple[int, int]:
         x, y, w, h = faces[0]
         return x + w // 2, y + h // 2
 
-    # Entropy fallback: find the most visually complex region
+    # Entropy fallback: find the most visually complex region, biased toward centre
     h, w = gray.shape
     block = 64
+    max_dist = ((w / 2) ** 2 + (h / 2) ** 2) ** 0.5
     best_val, best_cx, best_cy = -1, w // 2, h // 2
     for row in range(0, h - block, block // 2):
         for col in range(0, w - block, block // 2):
@@ -139,9 +140,13 @@ def detect_focal_point(img_cv) -> tuple[int, int]:
             hist = cv2.calcHist([patch], [0], None, [256], [0, 256])
             hist /= hist.sum()
             entropy = -np.sum(hist * np.log2(hist + 1e-10))
-            if entropy > best_val:
-                best_val = entropy
-                best_cx, best_cy = col + block // 2, row + block // 2
+            # Apply a gentle centre bias: up to 25% penalty at the image edges
+            cx, cy = col + block // 2, row + block // 2
+            dist = ((cx - w / 2) ** 2 + (cy - h / 2) ** 2) ** 0.5
+            weighted = entropy * (1 - 0.25 * dist / max_dist)
+            if weighted > best_val:
+                best_val = weighted
+                best_cx, best_cy = cx, cy
     return best_cx, best_cy
 
 
