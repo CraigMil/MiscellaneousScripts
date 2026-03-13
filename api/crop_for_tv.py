@@ -31,8 +31,9 @@ from ultralytics import YOLO
 from lib.utils import console
 
 # YOLO subject detector — person (0) and dog (16) classes
-# Model downloads automatically (~6 MB) on first use
-_YOLO = YOLO("yolov8n.pt")
+# Model is stored alongside the repo root; absolute path avoids working-dir issues in systemd
+_MODEL_PATH = Path(__file__).parent.parent / "yolov8n.pt"
+_YOLO = YOLO(str(_MODEL_PATH))
 _YOLO_SUBJECTS = {0, 16}  # COCO: 0=person, 16=dog
 
 # Camera/auto-generated prefixes to strip from the start of a filename stem.
