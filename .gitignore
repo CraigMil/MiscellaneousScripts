@@ -1,3 +1,4 @@
+.env
 .venv/
 api/frame_state.json
 api/frame_rotate.log
