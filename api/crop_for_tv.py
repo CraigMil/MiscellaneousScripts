@@ -40,6 +40,7 @@ _CAMERA_RE = re.compile(
     r"|pano[-_]?\d+"      # PANO_001
     r"|screenshot.*\d{4}" # screenshot_2024...
     r"|\d+"               # purely numeric
+    r"|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}.*"  # UUID
     r")$",
     re.IGNORECASE,
 )
@@ -226,6 +227,8 @@ def watch():
                 if out.exists():
                     out.unlink()
                     console.print(f"[yellow]removed:[/yellow] {out.name} (source deleted)")
+                else:
+                    console.print(f"[dim]source deleted (no cropped output to clean up):[/dim] {f.name}")
 
 
 def main():
