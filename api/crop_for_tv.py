@@ -81,25 +81,26 @@ def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
 
 def _burn_caption(img: Image.Image, text: str) -> Image.Image:
     """Burn text caption into bottom-left of image, returning the modified image."""
-    draw = ImageDraw.Draw(img, "RGBA")
-    # Scale font to image width
     font_size = max(24, int(_CAPTION_FONT_SIZE * img.width / TV_W))
     font = _load_font(font_size)
-
     pad = font_size // 2
+
+    # Draw onto a transparent RGBA overlay, then composite onto the image
+    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+
     bbox = draw.textbbox((0, 0), text, font=font)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-
     x = pad
     y = img.height - th - pad * 2
 
-    # Semi-transparent dark pill behind text
     draw.rectangle(
         [x - pad // 2, y - pad // 2, x + tw + pad // 2, y + th + pad // 2],
         fill=(0, 0, 0, 140),
     )
     draw.text((x, y), text, font=font, fill=(255, 255, 255, 230))
-    return img
+
+    return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
 
 SOURCE_DIR     = Path(os.environ.get("FRAME_SOURCE_DIR", "/Volumes/FastDrive/SamsungTVImageStore"))
 OUTPUT_DIR     = Path(os.environ.get("FRAME_IMAGE_DIR",  "/Volumes/FastDrive/SamsungTVImageStore"))
