@@ -180,6 +180,7 @@ def cmd_daemon(interval: int):
     while True:
         state = load_state()
         tv = connect()
+        upload_new(tv, state)
         show_image(tv, state)
         time.sleep(interval)
 
