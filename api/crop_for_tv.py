@@ -14,14 +14,91 @@ sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent.parent))
 
 import argparse
 import os
+import re
 import shutil
 import time
 from pathlib import Path
 
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from lib.utils import console
+
+# Patterns that indicate an auto-generated camera filename with no human meaning
+_CAMERA_RE = re.compile(
+    r"^("
+    r"img_?\d+"           # IMG_1234, IMG1234
+    r"|dsc[fn]?_?\d+"     # DSC0001, DSCF0001, DSCN0001, _DSC2397
+    r"|_dsc\d+"           # _DSC2397 (Sony)
+    r"|r\d{7}"            # R0001234 (Ricoh)
+    r"|p\d{8}"            # P20240101 (Samsung)
+    r"|mvc[-_]\d+"        # MVC-001 (old Sony)
+    r"|mvi_?\d+"          # MVI_1234 (Canon video)
+    r"|vid[-_]?\d+"       # VID_20240101
+    r"|photo[-_]?\d+"     # PHOTO_001
+    r"|pic[-_]?\d+"       # PIC_001
+    r"|pano[-_]?\d+"      # PANO_001
+    r"|screenshot.*\d{4}" # screenshot_2024...
+    r"|\d+"               # purely numeric
+    r")$",
+    re.IGNORECASE,
+)
+
+# Candidate font paths (tried in order; first found wins)
+_FONT_PATHS = [
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    "/System/Library/Fonts/Helvetica.ttc",  # macOS fallback
+]
+_CAPTION_FONT_SIZE = 72   # px at 4K; scales down for smaller images
+
+
+def caption_for(src: Path) -> str | None:
+    """Return a human-readable caption derived from the filename, or None if meaningless."""
+    stem = src.stem
+    # Strip _cropped suffix if somehow present
+    if stem.endswith("_cropped"):
+        stem = stem[: -len("_cropped")]
+    # Strip leading underscores / hyphens
+    stem = stem.lstrip("_-")
+    if _CAMERA_RE.match(stem):
+        return None
+    # Clean up separators and title-case
+    text = re.sub(r"[-_]+", " ", stem).strip()
+    if not text:
+        return None
+    return text.title()
+
+
+def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    for path in _FONT_PATHS:
+        if Path(path).exists():
+            return ImageFont.truetype(path, size)
+    return ImageFont.load_default()
+
+
+def _burn_caption(img: Image.Image, text: str) -> Image.Image:
+    """Burn text caption into bottom-left of image, returning the modified image."""
+    draw = ImageDraw.Draw(img, "RGBA")
+    # Scale font to image width
+    font_size = max(24, int(_CAPTION_FONT_SIZE * img.width / TV_W))
+    font = _load_font(font_size)
+
+    pad = font_size // 2
+    bbox = draw.textbbox((0, 0), text, font=font)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+
+    x = pad
+    y = img.height - th - pad * 2
+
+    # Semi-transparent dark pill behind text
+    draw.rectangle(
+        [x - pad // 2, y - pad // 2, x + tw + pad // 2, y + th + pad // 2],
+        fill=(0, 0, 0, 140),
+    )
+    draw.text((x, y), text, font=font, fill=(255, 255, 255, 230))
+    return img
 
 SOURCE_DIR     = Path(os.environ.get("FRAME_SOURCE_DIR", "/Volumes/FastDrive/SamsungTVImageStore"))
 OUTPUT_DIR     = Path(os.environ.get("FRAME_IMAGE_DIR",  "/Volumes/FastDrive/SamsungTVImageStore"))
@@ -79,10 +156,16 @@ def crop_to_4k(src: Path) -> Path | None:
     img_pil = Image.open(src).convert("RGB")
     iw, ih = img_pil.size
 
-    # If already 4K or smaller in both dims, just copy
+    caption = caption_for(src)
+
+    # If already 4K or smaller in both dims, just copy (or caption-only)
     if iw <= TV_W and ih <= TV_H:
-        console.print(f"[dim]small, copying as-is:[/dim] {src.name}")
-        shutil.copy2(src, out)
+        if caption:
+            img_pil = _burn_caption(img_pil, caption)
+            img_pil.save(out, quality=95)
+        else:
+            shutil.copy2(src, out)
+        console.print(f"[dim]small, {'captioned' if caption else 'copying as-is'}:[/dim] {src.name}")
         return out
 
     # Scale down so the shorter side matches 4K target
@@ -98,13 +181,16 @@ def crop_to_4k(src: Path) -> Path | None:
     left  = max(0, min(cx - TV_W // 2, new_w - TV_W))
     top   = max(0, min(cy - TV_H // 2, new_h - TV_H))
     cropped = img_pil.crop((left, top, left + TV_W, top + TV_H))
+    if caption:
+        cropped = _burn_caption(cropped, caption)
 
     try:
         cropped.save(out, quality=95)
     except PermissionError:
         console.print(f"[red]permission denied writing:[/red] {out} — check NAS write access for the mount user")
         return None
-    console.print(f"[green]cropped:[/green] {src.name} → {out.name} (focal {cx},{cy})")
+    caption_note = f" caption='{caption}'" if caption else ""
+    console.print(f"[green]cropped:[/green] {src.name} → {out.name} (focal {cx},{cy}{caption_note})")
     return out
 
 
