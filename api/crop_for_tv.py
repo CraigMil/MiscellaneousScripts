@@ -13,6 +13,7 @@ import sys
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent.parent))
 
 import argparse
+import json
 import os
 import re
 import shutil
@@ -76,12 +77,17 @@ def caption_for(src: Path) -> str | None:
     stem = _CAMERA_PREFIX_RE.sub("", stem, count=1).lstrip("_-~")
     # Strip trailing version/sync noise like v2, ~1v2, v3
     stem = re.sub(r"[~v]\d+$", "", stem, flags=re.IGNORECASE).rstrip("_-~")
+    # Restore possessives encoded as _s_ or _s at end (e.g. Quito_s_adventure → Quito's adventure)
+    stem = re.sub(r"_s(?=_|$)", "'s", stem)
     text = re.sub(r"[-_]+", " ", stem).strip()
-    # Require at least 2 words, each with 2+ letters
-    words = [w for w in text.split() if re.search(r"[a-z]{2,}", w, re.IGNORECASE)]
+    # Require at least 2 meaningful words (2+ letters, not image-processing noise)
+    _NOISE_WORDS = {"crop", "cropped", "edit", "edited", "resize", "resized",
+                    "copy", "final", "draft", "temp", "tmp", "new", "old", "v2", "v3"}
+    words = [w for w in text.split()
+             if re.search(r"[a-z]{2,}", w, re.IGNORECASE) and w.lower() not in _NOISE_WORDS]
     if len(words) < 2:
         return None
-    return text.title()
+    return " ".join(w.capitalize() for w in words)
 
 
 def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
@@ -128,8 +134,14 @@ def output_path(src: Path) -> Path:
     return OUTPUT_DIR / (src.stem + CROP_SUFFIX + src.suffix)
 
 
-def detect_focal_point(img_cv) -> tuple[int, int]:
-    """Return (cx, cy) focal point.
+_YOLO_CLASS_NAMES = {0: "person", 16: "dog"}
+
+
+def detect_focal_point(img_cv) -> tuple[int, int, tuple | None, list]:
+    """Return (cx, cy, subject_box, detections).
+
+    subject_box: (x1,y1,x2,y2) union of all detected subjects, or None.
+    detections: list of dicts with keys class, conf, box — empty if none found.
 
     Priority:
       1. YOLO subject detection (person + dog) — weighted centroid of all hits
@@ -144,15 +156,23 @@ def detect_focal_point(img_cv) -> tuple[int, int]:
         if int(box.cls) in _YOLO_SUBJECTS and float(box.conf) > 0.4
     ]
     if subjects:
-        # Weighted centroid: each box contributes proportional to its area
         total_w, cx_sum, cy_sum = 0.0, 0.0, 0.0
+        ux1, uy1, ux2, uy2 = w, h, 0.0, 0.0
+        detections = []
         for box in subjects:
             x1, y1, x2, y2 = box.xyxy[0].tolist()
             area = (x2 - x1) * (y2 - y1)
             cx_sum += ((x1 + x2) / 2) * area
             cy_sum += ((y1 + y2) / 2) * area
             total_w += area
-        return int(cx_sum / total_w), int(cy_sum / total_w)
+            ux1, uy1 = min(ux1, x1), min(uy1, y1)
+            ux2, uy2 = max(ux2, x2), max(uy2, y2)
+            detections.append({
+                "class": _YOLO_CLASS_NAMES.get(int(box.cls), str(int(box.cls))),
+                "conf": round(float(box.conf), 3),
+                "box": [round(v) for v in (x1, y1, x2, y2)],
+            })
+        return int(cx_sum / total_w), int(cy_sum / total_w), (ux1, uy1, ux2, uy2), detections
 
     # 2. Entropy fallback with centre bias
     gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
@@ -171,12 +191,15 @@ def detect_focal_point(img_cv) -> tuple[int, int]:
             if weighted > best_val:
                 best_val = weighted
                 best_cx, best_cy = cx, cy
-    return best_cx, best_cy
+    return best_cx, best_cy, None, []
 
 
 def crop_to_4k(src: Path) -> Path | None:
     """Crop src image to 4K centred on focal point. Returns output path or None on skip."""
     if is_cropped(src):
+        return None
+    if "nocrop" in src.stem.lower():
+        console.print(f"[dim]skipping (nocrop):[/dim] {src.name}")
         return None
 
     out = output_path(src)
@@ -198,19 +221,46 @@ def crop_to_4k(src: Path) -> Path | None:
         console.print(f"[dim]small, {'captioned' if caption else 'copying as-is'}:[/dim] {src.name}")
         return out
 
-    # Scale down so the shorter side matches 4K target
+    # Scale to fill (shorter side matches 4K) then detect subject
     scale = max(TV_W / iw, TV_H / ih)
     new_w, new_h = int(iw * scale), int(ih * scale)
-    img_pil = img_pil.resize((new_w, new_h), Image.LANCZOS)
+    img_scaled = img_pil.resize((new_w, new_h), Image.LANCZOS)
 
-    # Detect focal point on scaled image
-    img_cv = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
-    cx, cy = detect_focal_point(img_cv)
+    img_cv = cv2.cvtColor(np.array(img_scaled), cv2.COLOR_RGB2BGR)
+    cx, cy, subject_box, detections = detect_focal_point(img_cv)
 
-    # Crop box centred on focal point, clamped to bounds
-    left  = max(0, min(cx - TV_W // 2, new_w - TV_W))
-    top   = max(0, min(cy - TV_H // 2, new_h - TV_H))
-    cropped = img_pil.crop((left, top, left + TV_W, top + TV_H))
+    # If the subject fills the frame (larger than the crop window in either dimension),
+    # fit the original into 4K with black padding instead of cropping — avoids cutting
+    # off subjects that span the whole image.
+    if subject_box is not None:
+        sx1, sy1, sx2, sy2 = subject_box
+        subject_too_large = (sx2 - sx1) > TV_W or (sy2 - sy1) > TV_H
+    else:
+        subject_too_large = False
+
+    if subject_too_large:
+        fit_scale = min(TV_W / iw, TV_H / ih)
+        fit_w, fit_h = int(iw * fit_scale), int(ih * fit_scale)
+        img_fit = img_pil.resize((fit_w, fit_h), Image.LANCZOS)
+        canvas = Image.new("RGB", (TV_W, TV_H), (0, 0, 0))
+        canvas.paste(img_fit, ((TV_W - fit_w) // 2, (TV_H - fit_h) // 2))
+        cropped = canvas
+        console.print(f"[blue]fit (subject fills frame):[/blue] {src.name}")
+    else:
+        # Crop box centred on focal point; pad with black if it would go out of bounds
+        # rather than shifting the box (which pushes the subject toward the frame edge)
+        left = cx - TV_W // 2
+        top  = cy - TV_H // 2
+        if left >= 0 and top >= 0 and left + TV_W <= new_w and top + TV_H <= new_h:
+            cropped = img_scaled.crop((left, top, left + TV_W, top + TV_H))
+        else:
+            canvas = Image.new("RGB", (TV_W, TV_H), (0, 0, 0))
+            src_l, src_t = max(0, left), max(0, top)
+            src_r, src_b = min(new_w, left + TV_W), min(new_h, top + TV_H)
+            excerpt = img_scaled.crop((src_l, src_t, src_r, src_b))
+            exc_w, exc_h = excerpt.size
+            canvas.paste(excerpt, ((TV_W - exc_w) // 2, (TV_H - exc_h) // 2))
+            cropped = canvas
     if caption:
         cropped = _burn_caption(cropped, caption)
 
@@ -219,8 +269,24 @@ def crop_to_4k(src: Path) -> Path | None:
     except PermissionError:
         console.print(f"[red]permission denied writing:[/red] {out} — check NAS write access for the mount user")
         return None
-    caption_note = f" caption='{caption}'" if caption else ""
-    console.print(f"[green]cropped:[/green] {src.name} → {out.name} (focal {cx},{cy}{caption_note})")
+
+    # Write JSON sidecar with full detection debug info
+    sidecar = out.with_suffix(".json")
+    sidecar.write_text(json.dumps({
+        "source": src.name,
+        "original_size": [iw, ih],
+        "scaled_size": [new_w, new_h],
+        "scale": round(scale, 4),
+        "method": "fit" if subject_too_large else "crop",
+        "focal": [cx, cy],
+        "subject_box": [round(v) for v in subject_box] if subject_box else None,
+        "detections": detections,
+        "caption": caption,
+    }, indent=2))
+
+    if not subject_too_large:
+        caption_note = f" caption='{caption}'" if caption else ""
+        console.print(f"[green]cropped:[/green] {src.name} → {out.name} (focal {cx},{cy}{caption_note})")
     return out
 
 
@@ -236,6 +302,7 @@ def process_all():
 
 def watch():
     console.print(f"[bold]Watching[/bold] {SOURCE_DIR} → {OUTPUT_DIR}")
+    process_all()  # catch up on any backlog before entering the watch loop
     seen = set(SOURCE_DIR.iterdir())
     while True:
         time.sleep(5)

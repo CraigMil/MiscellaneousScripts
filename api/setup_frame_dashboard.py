@@ -31,8 +31,8 @@ def loki_stat(title, expr, x, y, w=6, h=4, color_mode="value", thresholds=None):
         "type": "stat",
         "title": title,
         "gridPos": {"x": x, "y": y, "w": w, "h": h},
-        "options": {"reduceOptions": {"calcs": ["sum"]}, "colorMode": color_mode, "graphMode": "none"},
-        "targets": [{"expr": expr, "datasource": {"type": "loki"}, "legendFormat": ""}],
+        "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": color_mode, "graphMode": "none"},
+        "targets": [{"expr": expr, "datasource": {"type": "loki"}, "legendFormat": "", "instant": True}],
         "fieldConfig": {"defaults": {}},
     }
     if thresholds:
@@ -90,7 +90,7 @@ panels = [
     row_panel("Rotation Overview", y=0),
 
     loki_stat("Images in Rotation",
-              r'count(sum by (filename) (count_over_time({job="frame_rotate"} | regexp `Showing (?P<filename>[^\s(]+)` | __error__="" [$__range])))',
+              r'count(count by (filename) (count_over_time({job="frame_rotate"} |= "Showing " | pattern `Showing <filename> (` | filename != "" [$__range])))',
               x=0, y=1, w=6, h=4),
 
     loki_stat("Total Shows",
@@ -135,7 +135,7 @@ panels = [
             "tooltip": {"mode": "single"},
         },
         "targets": [{
-            "expr": r'sort_desc(sum by (filename) (count_over_time({job="frame_rotate"} | regexp `Showing (?P<filename>[^\s(]+)` | __error__="" [$__range])))',
+            "expr": r'sort_desc(sum by (filename) (count_over_time({job="frame_rotate"} |= "Showing " | pattern `Showing <filename> (` | filename != "" [$__range])))',
             "datasource": {"type": "loki"},
             "legendFormat": "{{filename}}",
             "instant": True,
@@ -194,6 +194,7 @@ panels = [
 # ── dashboard payload ─────────────────────────────────────────────────────────
 
 dashboard = {
+    "uid": "frame-tv-monitor",
     "title": "Frame TV Monitor",
     "tags": ["frame-tv"],
     "timezone": "browser",

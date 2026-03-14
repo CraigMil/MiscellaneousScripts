@@ -45,19 +45,33 @@ def connect() -> SamsungTVWS:
 
 
 def require_artmode(tv: SamsungTVWS):
-    """Exit with a clear message if the TV is off or not in Art Mode."""
+    """Raise ConnectionFailure if the TV is not actively displaying Art Mode.
+
+    Raises instead of sys.exit so the daemon loop can skip the cycle gracefully.
+    Only sys.exit on permanent hardware failure (art mode not supported at all).
+
+    The Samsung Frame TV art WebSocket is always running in the background and
+    get_artmode_status returns the ambient *preference* ("on"/"off"), not the
+    current display state — so it returns "on" even when the user is watching TV.
+
+    The reliable signal: immediately after the WebSocket handshake the TV
+    spontaneously sends an `image_selected` D2D event with `is_shown="Yes"` when
+    art is on-screen, or `is_shown="No"` when the TV is in regular viewing mode.
+    We read that event before sending any request.
+    """
     try:
         art = tv.art()
         if not art.supported():
             console.print("[red]Art mode not supported on this TV.[/red]")
             sys.exit(1)
-    except ConnectionFailure as e:
-        msg = str(e)
-        if "go_to_standby" in msg:
-            console.print("[red]TV is in standby.[/red] Turn it on and switch to Art Mode, then retry.")
-        else:
-            console.print(f"[red]Connection failed:[/red] {msg}")
-        sys.exit(1)
+
+        if not art.get_artmode():
+            raise ConnectionFailure("TV is not in Art Mode — skipping")
+
+    except ConnectionFailure:
+        raise
+    except Exception as e:
+        raise ConnectionFailure(f"Art mode check failed: {e}") from e
 
 
 def load_state() -> dict:
@@ -104,7 +118,6 @@ def _upload_one(art, data: bytes) -> str:
 
 
 def upload_new(tv: SamsungTVWS, state: dict) -> int:
-    require_artmode(tv)
     art = tv.art()
     images = local_images()
     uploaded = state["uploaded"]
@@ -130,7 +143,6 @@ def upload_new(tv: SamsungTVWS, state: dict) -> int:
 
 
 def show_image(tv: SamsungTVWS, state: dict):
-    require_artmode(tv)
     uploaded = state["uploaded"]
 
     available = list(uploaded.keys())
@@ -195,13 +207,46 @@ def cmd_next():
     show_image(tv, state)
 
 
+def sync_deleted(tv: SamsungTVWS, state: dict):
+    """Remove images from state (and TV) whose source files no longer exist in IMAGE_DIR."""
+    uploaded = state["uploaded"]
+    missing = [name for name in list(uploaded) if not (IMAGE_DIR / name).exists()]
+    if not missing:
+        return
+    art = tv.art()
+    art.delete_list([uploaded[name] for name in missing])
+    for name in missing:
+        console.print(f"[yellow]removed:[/yellow] {name} (source deleted)")
+        del uploaded[name]
+    # Drop any queued entries for deleted files
+    state["queue"] = [f for f in state.get("queue", []) if f not in missing]
+    save_state(state)
+
+
+_LOOP_TIMEOUT = int(os.environ.get("FRAME_LOOP_TIMEOUT", "60"))
+
+
 def cmd_daemon(interval: int):
     console.print(f"[bold]Daemon mode:[/bold] rotating every {interval}s. Ctrl-C to stop.")
+
+    def _timeout_handler(signum, frame):
+        raise ConnectionFailure(f"TV operation timed out after {_LOOP_TIMEOUT}s")
+
     while True:
-        state = load_state()
-        tv = connect()
-        upload_new(tv, state)
-        show_image(tv, state)
+        old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
+        signal.alarm(_LOOP_TIMEOUT)
+        try:
+            state = load_state()
+            tv = connect()
+            require_artmode(tv)   # single fast check — skip the whole cycle if not in art mode
+            sync_deleted(tv, state)
+            upload_new(tv, state)
+            show_image(tv, state)
+        except ConnectionFailure as e:
+            console.print(f"[red]TV error (skipping):[/red] {e}")
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old_handler)
         time.sleep(interval)
 
 

@@ -1,16 +1,15 @@
-// Grafana Alloy config — ships frame_rotate.log to local Loki
+// Grafana Alloy config — ships frame-rotate and frame-crop systemd journal logs to local Loki
 
-local.file_match "frame_rotate" {
-  path_targets = [{
-    __path__ = "/home/craigmil/MiscellaneousScripts/api/frame_rotate.log",
-    job       = "frame_rotate",
-    host      = "grafana-vm",
-  }]
+loki.source.journal "frame_rotate" {
+  forward_to = [loki.write.local.receiver]
+  labels     = {job = "frame_rotate"}
+  matches    = "_SYSTEMD_UNIT=frame-rotate.service"
 }
 
-loki.source.file "frame_rotate" {
-  targets    = local.file_match.frame_rotate.targets
+loki.source.journal "frame_crop" {
   forward_to = [loki.write.local.receiver]
+  labels     = {job = "frame_crop"}
+  matches    = "_SYSTEMD_UNIT=frame-crop.service"
 }
 
 loki.write "local" {
