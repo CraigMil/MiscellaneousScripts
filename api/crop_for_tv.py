@@ -22,7 +22,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 import os
 import torch
 os.environ.setdefault("TORCH_CPP_LOG_LEVEL", "ERROR")  # suppress NNPACK/hardware warnings
@@ -42,6 +42,7 @@ _YOLO_SUBJECTS = {0, 16}  # COCO: 0=person, 16=dog
 _CAMERA_PREFIX_RE = re.compile(
     r"^("
     r"_?dsc[fn]?\d+"       # _DSC2397, DSC0001, DSCF001, DSCN001
+    r"|(img|vid)-\d{8}-wa\d+"  # IMG-20231111-WA0008, VID-20231111-WA0008 (WhatsApp)
     r"|img_?\d+"            # IMG_1234, IMG1234
     r"|r\d{7}"              # R0001234 (Ricoh)
     r"|mvc[-_]\d+"          # MVC-001 (old Sony)
@@ -206,28 +207,44 @@ def crop_to_4k(src: Path) -> Path | None:
     if out.exists():
         return None  # already processed
 
-    img_pil = Image.open(src).convert("RGB")
+    raw = Image.open(src)
+    img_pil = ImageOps.exif_transpose(raw).convert("RGB")
+    exif_rotated = raw.size != img_pil.size  # True if transpose swapped width/height
     iw, ih = img_pil.size
+
+    if exif_rotated:
+        console.print(f"[cyan]EXIF rotation applied:[/cyan] {src.name} ({raw.size[0]}x{raw.size[1]} → {iw}x{ih})")
 
     caption = caption_for(src)
 
-    # If already 4K or smaller in both dims, just copy (or caption-only)
+    # If already 4K or smaller in both dims, save the (exif-corrected) image directly.
+    # shutil.copy2 would carry the original EXIF rotation tag which some displays mishandle.
     if iw <= TV_W and ih <= TV_H:
         if caption:
             img_pil = _burn_caption(img_pil, caption)
-            img_pil.save(out, quality=95)
-        else:
-            shutil.copy2(src, out)
+        img_pil.save(out, quality=95)
         console.print(f"[dim]small, {'captioned' if caption else 'copying as-is'}:[/dim] {src.name}")
         return out
 
     # Scale to fill (shorter side matches 4K) then detect subject
-    scale = max(TV_W / iw, TV_H / ih)
-    new_w, new_h = int(iw * scale), int(ih * scale)
+    fill_scale = max(TV_W / iw, TV_H / ih)
+    fit_scale  = min(TV_W / iw, TV_H / ih)
+    new_w, new_h = int(iw * fill_scale), int(ih * fill_scale)
     img_scaled = img_pil.resize((new_w, new_h), Image.LANCZOS)
 
     img_cv = cv2.cvtColor(np.array(img_scaled), cv2.COLOR_RGB2BGR)
     cx, cy, subject_box, detections = detect_focal_point(img_cv)
+
+    # When no subject detected (entropy fallback), the focal point is uncertain.
+    # Back off 75% toward fit scale to avoid aggressively cropping the wrong area.
+    if not detections:
+        scale = fit_scale + 0.25 * (fill_scale - fit_scale)
+        new_w, new_h = int(iw * scale), int(ih * scale)
+        img_scaled = img_pil.resize((new_w, new_h), Image.LANCZOS)
+        cx = int(cx * scale / fill_scale)
+        cy = int(cy * scale / fill_scale)
+    else:
+        scale = fill_scale
 
     # If the subject fills the frame (larger than the crop window in either dimension),
     # fit the original into 4K with black padding instead of cropping — avoids cutting
@@ -275,9 +292,10 @@ def crop_to_4k(src: Path) -> Path | None:
     sidecar.write_text(json.dumps({
         "source": src.name,
         "original_size": [iw, ih],
+        "exif_rotated": exif_rotated,
         "scaled_size": [new_w, new_h],
         "scale": round(scale, 4),
-        "method": "fit" if subject_too_large else "crop",
+        "method": "fit" if subject_too_large else ("crop-soft" if not detections else "crop"),
         "focal": [cx, cy],
         "subject_box": [round(v) for v in subject_box] if subject_box else None,
         "detections": detections,

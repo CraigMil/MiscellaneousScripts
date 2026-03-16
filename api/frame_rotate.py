@@ -193,7 +193,8 @@ def cmd_reupload():
     art.delete_list(content_ids)
 
     state["uploaded"] = {}
-    state["index"] = 0
+    state.pop("index", None)
+    state["queue"] = []
     save_state(state)
     console.print("[green]Deleted.[/green] Re-uploading with full-bleed matte settings...\n")
 
@@ -254,16 +255,12 @@ def cmd_status():
     state = load_state()
     images = local_images()
     uploaded = state["uploaded"]
-    available = [img for img in images if img.name in uploaded]
-    idx = state["index"] % max(len(available), 1)
+    queue = state.get("queue", [])
 
     console.print(f"[bold]Image dir:[/bold] {IMAGE_DIR}")
     console.print(f"[bold]Local images:[/bold] {len(images)}")
     console.print(f"[bold]Uploaded:[/bold] {len(uploaded)}")
-    console.print(f"[bold]Next index:[/bold] {idx} / {len(available)}")
-    if available:
-        current = available[(idx - 1) % len(available)]
-        console.print(f"[bold]Last shown:[/bold] {current.name}")
+    console.print(f"[bold]Shuffle queue remaining:[/bold] {len(queue)} / {len(uploaded)}")
 
 
 def main():
