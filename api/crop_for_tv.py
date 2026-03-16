@@ -98,20 +98,17 @@ def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     return ImageFont.load_default()
 
 
-def _burn_caption(img: Image.Image, text: str) -> Image.Image:
-    """Burn text caption into bottom-left of image, returning the modified image."""
+def _burn_text_overlay(img: Image.Image, text: str, x: int, y: int) -> Image.Image:
+    """Burn a text label at (x, y) onto img using a dark backing box."""
     font_size = max(24, int(_CAPTION_FONT_SIZE * img.width / TV_W))
     font = _load_font(font_size)
     pad = font_size // 2
 
-    # Draw onto a transparent RGBA overlay, then composite onto the image
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
 
     bbox = draw.textbbox((0, 0), text, font=font)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    x = pad
-    y = img.height - th - pad * 2
 
     draw.rectangle(
         [x - pad // 2, y - pad // 2, x + tw + pad // 2, y + th + pad // 2],
@@ -120,6 +117,26 @@ def _burn_caption(img: Image.Image, text: str) -> Image.Image:
     draw.text((x, y), text, font=font, fill=(255, 255, 255, 230))
 
     return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+
+
+def _burn_caption(img: Image.Image, text: str) -> Image.Image:
+    """Burn caption into bottom-left of image."""
+    font_size = max(24, int(_CAPTION_FONT_SIZE * img.width / TV_W))
+    font = _load_font(font_size)
+    pad = font_size // 2
+    bbox = ImageDraw.Draw(Image.new("RGBA", (1, 1))).textbbox((0, 0), text, font=font)
+    th = bbox[3] - bbox[1]
+    return _burn_text_overlay(img, text, x=pad, y=img.height - th - pad * 2)
+
+
+def _burn_debug_label(img: Image.Image, text: str) -> Image.Image:
+    """Burn a debug label into the top-right of image."""
+    font_size = max(24, int(_CAPTION_FONT_SIZE * img.width / TV_W))
+    font = _load_font(font_size)
+    pad = font_size // 2
+    bbox = ImageDraw.Draw(Image.new("RGBA", (1, 1))).textbbox((0, 0), text, font=font)
+    tw = bbox[2] - bbox[0]
+    return _burn_text_overlay(img, text, x=img.width - tw - pad, y=pad)
 
 SOURCE_DIR     = Path(os.environ.get("FRAME_SOURCE_DIR", "/Volumes/FastDrive/SamsungTVImageStore"))
 OUTPUT_DIR     = Path(os.environ.get("FRAME_IMAGE_DIR",  "/Volumes/FastDrive/SamsungTVImageStore"))
@@ -195,15 +212,19 @@ def detect_focal_point(img_cv) -> tuple[int, int, tuple | None, list]:
     return best_cx, best_cy, None, []
 
 
-def crop_to_4k(src: Path) -> Path | None:
-    """Crop src image to 4K centred on focal point. Returns output path or None on skip."""
+def crop_to_4k(src: Path, *, out_path: Path = None, debug_label: str = None) -> Path | None:
+    """Crop src image to 4K centred on focal point. Returns output path or None on skip.
+
+    out_path: override the default output filename (used by debug mode).
+    debug_label: if set, burned into the top-right corner (debug mode only).
+    """
     if is_cropped(src):
         return None
     if "nocrop" in src.stem.lower():
         console.print(f"[dim]skipping (nocrop):[/dim] {src.name}")
         return None
 
-    out = output_path(src)
+    out = out_path or output_path(src)
     if out.exists():
         return None  # already processed
 
@@ -280,6 +301,8 @@ def crop_to_4k(src: Path) -> Path | None:
             cropped = canvas
     if caption:
         cropped = _burn_caption(cropped, caption)
+    if debug_label:
+        cropped = _burn_debug_label(cropped, debug_label)
 
     try:
         cropped.save(out, quality=95)
@@ -318,6 +341,19 @@ def process_all():
         crop_to_4k(img)
 
 
+def process_all_debug():
+    """Debug mode: crop all images numbered 1..N with filename overlay top-right."""
+    images = sorted(p for p in SOURCE_DIR.iterdir()
+                    if p.suffix.lower() in SUPPORTED_EXTS and not is_cropped(p))
+    if not images:
+        console.print("[yellow]No images found.[/yellow]")
+        return
+    console.print(f"[bold]Debug crop:[/bold] {len(images)} images → 1–{len(images)}.jpg")
+    for n, src in enumerate(images, 1):
+        out = OUTPUT_DIR / f"{n}.jpg"
+        crop_to_4k(src, out_path=out, debug_label=f"#{n}  {src.name}")
+
+
 def watch():
     console.print(f"[bold]Watching[/bold] {SOURCE_DIR} → {OUTPUT_DIR}")
     process_all()  # catch up on any backlog before entering the watch loop
@@ -351,6 +387,8 @@ def main():
     group.add_argument("--watch", action="store_true", help="Watch folder for new files")
     group.add_argument("--file",  type=Path, metavar="PATH", help="Crop a single file")
     group.add_argument("--all",   action="store_true", help="Crop all uncropped files in folder")
+    group.add_argument("--debug", action="store_true",
+                       help="Crop all files numbered 1..N with filename overlay (for sidecar review)")
     args = parser.parse_args()
 
     if args.watch:
@@ -359,6 +397,8 @@ def main():
         crop_to_4k(args.file)
     elif args.all:
         process_all()
+    elif args.debug:
+        process_all_debug()
 
 
 if __name__ == "__main__":
