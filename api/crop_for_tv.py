@@ -238,15 +238,18 @@ def crop_to_4k(src: Path, *, out_path: Path = None, debug_label: str = None) -> 
 
     caption = caption_for(src)
 
-    # If already 4K or smaller in both dims, save the (exif-corrected) image directly.
-    # shutil.copy2 would carry the original EXIF rotation tag which some displays mishandle.
+    # If already 4K or smaller in both dims, centre on a black 4K canvas so the TV
+    # has a native 4K image and won't scale/crop it to fill the screen.
     if iw <= TV_W and ih <= TV_H:
+        canvas = Image.new("RGB", (TV_W, TV_H), (0, 0, 0))
+        canvas.paste(img_pil, ((TV_W - iw) // 2, (TV_H - ih) // 2))
+        img_pil = canvas
         if caption:
             img_pil = _burn_caption(img_pil, caption)
         if debug_label:
             img_pil = _burn_debug_label(img_pil, debug_label)
         img_pil.save(out, quality=95)
-        console.print(f"[dim]small, {'captioned' if caption else 'copying as-is'}:[/dim] {src.name}")
+        console.print(f"[dim]small, padded to 4K{',' if caption else ':'} {'captioned' if caption else ''}:[/dim] {src.name}")
         return out
 
     # Scale to fill (shorter side matches 4K) then detect subject
