@@ -190,13 +190,17 @@ def cmd_reupload():
 
     content_ids = list(uploaded.values())
     console.print(f"[cyan]Deleting {len(content_ids)} images from TV...[/cyan]")
-    art.delete_list(content_ids)
+    try:
+        art.delete_list(content_ids)
+        console.print("[green]Deleted.[/green]")
+    except Exception as e:
+        console.print(f"[yellow]Delete failed (images may already be gone on TV): {e}[/yellow]")
 
     state["uploaded"] = {}
     state.pop("index", None)
     state["queue"] = []
     save_state(state)
-    console.print("[green]Deleted.[/green] Re-uploading with full-bleed matte settings...\n")
+    console.print("Re-uploading with full-bleed matte settings...\n")
 
     n = upload_new(tv, state)
     console.print(f"\n[bold]{n} image(s) re-uploaded.[/bold]")
