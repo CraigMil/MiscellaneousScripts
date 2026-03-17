@@ -243,6 +243,8 @@ def crop_to_4k(src: Path, *, out_path: Path = None, debug_label: str = None) -> 
     if iw <= TV_W and ih <= TV_H:
         if caption:
             img_pil = _burn_caption(img_pil, caption)
+        if debug_label:
+            img_pil = _burn_debug_label(img_pil, debug_label)
         img_pil.save(out, quality=95)
         console.print(f"[dim]small, {'captioned' if caption else 'copying as-is'}:[/dim] {src.name}")
         return out
