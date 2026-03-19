@@ -16,12 +16,12 @@ jobs:
       - name: Run Claude investigation
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
-          PROMPT="You are investigating a GitHub issue in this repository.
+          PROMPT="You are investigating a GitHub issue in this repository (CraigMil/MiscellaneousScripts).
 
           Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}
 
@@ -30,8 +30,9 @@ jobs:
           Your task:
           1. Read the issue carefully
           2. Explore the relevant code in this repo
-          3. Identify the root cause or answer the question
-          4. Write a clear, concise findings summary
+          3. If the issue references another repo under the CraigMil GitHub account, clone it with: gh repo clone CraigMil/<repo-name> /tmp/<repo-name>
+          4. Identify the root cause or answer the question
+          5. Write a clear, concise findings summary
 
           Output only the findings — this will be posted as a GitHub issue comment."
 
