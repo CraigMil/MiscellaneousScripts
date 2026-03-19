@@ -1,0 +1,40 @@
+name: Claude Investigates Issue
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  investigate:
+    if: github.event.label.name == 'investigate'
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Run Claude investigation
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          PROMPT="You are investigating a GitHub issue in this repository.
+
+          Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}
+
+          ${ISSUE_BODY}
+
+          Your task:
+          1. Read the issue carefully
+          2. Explore the relevant code in this repo
+          3. Identify the root cause or answer the question
+          4. Write a clear, concise findings summary
+
+          Output only the findings — this will be posted as a GitHub issue comment."
+
+          RESULT=$(claude --dangerously-skip-permissions --print "$PROMPT")
+
+          gh issue comment "$ISSUE_NUMBER" --body "$RESULT"
