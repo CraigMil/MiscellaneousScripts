@@ -5,28 +5,47 @@ on:
     types: [labeled]
   issue_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to investigate'
+        required: true
 
 jobs:
   investigate:
-    if: "(github.event_name == 'issues' && github.event.label.name == 'investigate') || (github.event_name == 'issue_comment' && contains(toLower(github.event.comment.body), 'investigate'))"
+    if: "github.event_name == 'workflow_dispatch' || (github.event_name == 'issues' && github.event.label.name == 'investigate') || github.event_name == 'issue_comment'"
     runs-on: self-hosted
 
     steps:
+      - name: Check trigger condition
+        id: gate
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" = "issue_comment" ]; then
+            echo "$COMMENT_BODY" | grep -qi "investigate" || { echo "skip=true" >> $GITHUB_OUTPUT; exit 0; }
+          fi
+          echo "skip=false" >> $GITHUB_OUTPUT
+
       - name: Checkout repo
+        if: steps.gate.outputs.skip != 'true'
         uses: actions/checkout@v4
 
       - name: Post starting comment
+        if: steps.gate.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --body "🔍 Claude is on it — investigation started."
+          gh issue comment "$ISSUE_NUMBER" --body "Claude is on it - investigation started."
 
       - name: Run Claude investigation
+        if: steps.gate.outputs.skip != 'true'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GH_TOKEN: ${{ secrets.GH_PAT }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           COMMENT_BODY: ${{ github.event.comment.body }}
@@ -36,7 +55,7 @@ jobs:
             EXTRA_CONTEXT="Additional context from triggering comment: ${COMMENT_BODY}"
           fi
 
-          PROMPT="You are investigating a GitHub issue in this repository (CraigMil/MiscellaneousScripts).
+          PROMPT="You are investigating a GitHub issue in this repository.
 
           Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}
 
@@ -53,15 +72,14 @@ jobs:
 
           Output only the findings — this will be posted as a GitHub issue comment."
 
-          # Mark time so we can find the session file after
-          touch /tmp/claude_marker
+          MARKER=~/claude_marker
+          touch "$MARKER"
 
           RESULT=$(claude --dangerously-skip-permissions --print "$PROMPT")
 
-          # Find the session ID from the most recently created claude session file
-          SESSION_ID=$(find ~/.claude -name "*.jsonl" -newer /tmp/claude_marker 2>/dev/null | sort -t/ -k1 | tail -1 | xargs basename 2>/dev/null | sed 's/\.jsonl//')
+          SESSION_ID=$(find ~/.claude -name "*.jsonl" -newer "$MARKER" 2>/dev/null | sort -t/ -k1 | tail -1 | xargs basename 2>/dev/null | sed 's/\.jsonl//')
+          rm -f "$MARKER"
 
-          # Build the result comment
           COMMENT="## Claude Investigation Complete
 
           ${RESULT}"
@@ -70,10 +88,8 @@ jobs:
             COMMENT="${COMMENT}
 
           ---
-          **To resume this session on your Mac:**
-          \`\`\`
-          claude --resume ${SESSION_ID}
-          \`\`\`"
+          To resume this session on your Mac:
+          claude --resume ${SESSION_ID}"
           fi
 
           gh issue comment "$ISSUE_NUMBER" --body "$COMMENT"
