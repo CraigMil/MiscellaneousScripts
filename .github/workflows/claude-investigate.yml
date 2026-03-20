@@ -50,18 +50,18 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
           COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          EXTRA_CONTEXT=""
-          if [ -n "$COMMENT_BODY" ]; then
-            EXTRA_CONTEXT="Additional context from triggering comment: ${COMMENT_BODY}"
-          fi
+          # Fetch full comment thread
+          COMMENTS=$(gh api repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments --jq '[.[] | "[\(.created_at | split("T")[0])] \(.user.login): \(.body)"] | join("\n---\n")')
 
           PROMPT="You are investigating a GitHub issue in this repository.
 
           Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}
 
+          Issue body:
           ${ISSUE_BODY}
 
-          ${EXTRA_CONTEXT}
+          Comment thread:
+          ${COMMENTS}
 
           Your task:
           1. Read the issue carefully
