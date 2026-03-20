@@ -3,10 +3,14 @@ name: Claude Investigates Issue
 on:
   issues:
     types: [labeled]
+  issue_comment:
+    types: [created]
 
 jobs:
   investigate:
-    if: github.event.label.name == 'investigate'
+    if: |
+      (github.event_name == 'issues' && github.event.label.name == 'investigate') ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, 'investigate'))
     runs-on: self-hosted
 
     steps:
@@ -20,12 +24,20 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
+          EXTRA_CONTEXT=""
+          if [ -n "$COMMENT_BODY" ]; then
+            EXTRA_CONTEXT="Additional context from triggering comment: ${COMMENT_BODY}"
+          fi
+
           PROMPT="You are investigating a GitHub issue in this repository (CraigMil/MiscellaneousScripts).
 
           Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}
 
           ${ISSUE_BODY}
+
+          ${EXTRA_CONTEXT}
 
           Your task:
           1. Read the issue carefully
