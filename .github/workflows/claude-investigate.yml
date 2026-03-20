@@ -8,9 +8,7 @@ on:
 
 jobs:
   investigate:
-    if: |
-      (github.event_name == 'issues' && github.event.label.name == 'investigate') ||
-      (github.event_name == 'issue_comment' && contains(toLower(github.event.comment.body), 'investigate'))
+    if: "(github.event_name == 'issues' && github.event.label.name == 'investigate') || (github.event_name == 'issue_comment' && contains(toLower(github.event.comment.body), 'investigate'))"
     runs-on: self-hosted
 
     steps:
