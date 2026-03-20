@@ -17,6 +17,13 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Post starting comment
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --body "🔍 Claude is on it — investigation started."
+
       - name: Run Claude investigation
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -48,6 +55,27 @@ jobs:
 
           Output only the findings — this will be posted as a GitHub issue comment."
 
+          # Mark time so we can find the session file after
+          touch /tmp/claude_marker
+
           RESULT=$(claude --dangerously-skip-permissions --print "$PROMPT")
 
-          gh issue comment "$ISSUE_NUMBER" --body "$RESULT"
+          # Find the session ID from the most recently created claude session file
+          SESSION_ID=$(find ~/.claude -name "*.jsonl" -newer /tmp/claude_marker 2>/dev/null | sort -t/ -k1 | tail -1 | xargs basename 2>/dev/null | sed 's/\.jsonl//')
+
+          # Build the result comment
+          COMMENT="## Claude Investigation Complete
+
+          ${RESULT}"
+
+          if [ -n "$SESSION_ID" ]; then
+            COMMENT="${COMMENT}
+
+          ---
+          **To resume this session on your Mac:**
+          \`\`\`
+          claude --resume ${SESSION_ID}
+          \`\`\`"
+          fi
+
+          gh issue comment "$ISSUE_NUMBER" --body "$COMMENT"
