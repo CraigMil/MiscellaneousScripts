@@ -1860,8 +1860,8 @@
             "type": "prometheus",
             "uid": "efdoo4g7u54hsa"
           },
-          "expr": "rate(node_network_receive_bytes_total{job=\"node\", alias=\"$alias\", device=\"eth0\"}[5m])",
-          "legendFormat": "Receive",
+          "expr": "rate(node_network_receive_bytes_total{job=\"node\", alias=\"$alias\", device=~\"eth.*|ens.*|enp.*|eno.*|vmbr.*|wlp.*\"}[5m])",
+          "legendFormat": "Receive {{device}}",
           "refId": "A"
         },
         {
@@ -1869,12 +1869,12 @@
             "type": "prometheus",
             "uid": "efdoo4g7u54hsa"
           },
-          "expr": "rate(node_network_transmit_bytes_total{job=\"node\", alias=\"$alias\", device=\"eth0\"}[5m])",
-          "legendFormat": "Transmit",
+          "expr": "rate(node_network_transmit_bytes_total{job=\"node\", alias=\"$alias\", device=~\"eth.*|ens.*|enp.*|eno.*|vmbr.*|wlp.*\"}[5m])",
+          "legendFormat": "Transmit {{device}}",
           "refId": "B"
         }
       ],
-      "title": "Network Traffic \u2014 eth0 (\u2193 RX / \u2191 TX)",
+      "title": "Network Traffic (\u2193 RX / \u2191 TX)",
       "type": "timeseries"
     },
     {
@@ -1969,8 +1969,8 @@
             "type": "prometheus",
             "uid": "efdoo4g7u54hsa"
           },
-          "expr": "rate(node_network_receive_packets_total{job=\"node\", alias=\"$alias\", device=\"eth0\"}[5m])",
-          "legendFormat": "RX Packets",
+          "expr": "rate(node_network_receive_packets_total{job=\"node\", alias=\"$alias\", device=~\"eth.*|ens.*|enp.*|eno.*|vmbr.*|wlp.*\"}[5m])",
+          "legendFormat": "RX Packets {{device}}",
           "refId": "A"
         },
         {
@@ -1978,8 +1978,8 @@
             "type": "prometheus",
             "uid": "efdoo4g7u54hsa"
           },
-          "expr": "rate(node_network_transmit_packets_total{job=\"node\", alias=\"$alias\", device=\"eth0\"}[5m])",
-          "legendFormat": "TX Packets",
+          "expr": "rate(node_network_transmit_packets_total{job=\"node\", alias=\"$alias\", device=~\"eth.*|ens.*|enp.*|eno.*|vmbr.*|wlp.*\"}[5m])",
+          "legendFormat": "TX Packets {{device}}",
           "refId": "B"
         },
         {
@@ -1987,12 +1987,12 @@
             "type": "prometheus",
             "uid": "efdoo4g7u54hsa"
           },
-          "expr": "rate(node_network_receive_drop_total{job=\"node\", alias=\"$alias\", device=\"eth0\"}[5m])",
-          "legendFormat": "RX Drops",
+          "expr": "rate(node_network_receive_drop_total{job=\"node\", alias=\"$alias\", device=~\"eth.*|ens.*|enp.*|eno.*|vmbr.*|wlp.*\"}[5m])",
+          "legendFormat": "RX Drops {{device}}",
           "refId": "C"
         }
       ],
-      "title": "Network Packets \u2014 eth0",
+      "title": "Network Packets",
       "type": "timeseries"
     },
     {
