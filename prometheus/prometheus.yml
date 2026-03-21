@@ -32,28 +32,28 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9100']
         labels:
-          alias: 'Prometheus Server'
+          alias: 'Prometheus Server (VM)'
       - targets: ['192.168.1.71:9100']
         labels:
-          alias: 'Zigbee2MQTT Server'
+          alias: 'Zigbee2MQTT Server (LXC)'
       - targets: ['192.168.1.73:9100']
         labels:
-          alias: 'HomeAssistant Server'
+          alias: 'HomeAssistant Server (VM)'
       - targets: ['192.168.1.70:9100']
         labels:
-          alias: 'MQTT Server'
+          alias: 'MQTT Server (LXC)'
       - targets: ['192.168.1.47:9100']
         labels:
-          alias: 'Frigate Server'
+          alias: 'Frigate Server (VM)'
       - targets: ['192.168.1.75:9100']
         labels:
           alias: 'Primary Proxmox Server'
       - targets: ['192.168.1.74:9100']
         labels:
           alias: 'Secondary Proxmox Server'
-      - targets: [192.168.1.120:9100]
+      - targets: ['192.168.1.120:9100']
         labels:
-          alias: GitHub Runner
+          alias: 'GitHub Runner (LXC)'
 
 
   - job_name: mqtt_canary
