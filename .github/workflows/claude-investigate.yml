@@ -77,7 +77,7 @@ jobs:
 
           RESULT=$(claude --dangerously-skip-permissions --print "$PROMPT")
 
-          SESSION_ID=$(find ~/.claude -name "*.jsonl" -newer "$MARKER" 2>/dev/null | sort -t/ -k1 | tail -1 | xargs basename 2>/dev/null | sed 's/\.jsonl//')
+          SESSION_ID=$(find ~/.claude -name "*.jsonl" -newer "$MARKER" -not -path "*/subagents/*" 2>/dev/null | xargs -I{} basename {} .jsonl 2>/dev/null | grep -E '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' | tail -1)
           rm -f "$MARKER"
 
           COMMENT="## Claude Investigation Complete
