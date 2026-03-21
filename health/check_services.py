@@ -12,11 +12,11 @@ SERVICES = {
     "Grafana":       (GRAFANA_URL, "/api/health"),
     "Home Assistant": (HOME_ASSISTANT_URL, "/api/"),
     "Frigate":       (FRIGATE_URL, "/api/version"),
-    "Loki":          (LOKI_URL, "/ready"),
+    "Loki":          (LOKI_URL, "/loki/api/v1/labels"),
 }
 
 
-def check(base: str, path: str, timeout: int = 5) -> tuple[bool, int | None]:
+def check(base: str, path: str, timeout: int = 5) -> tuple:
     try:
         r = requests.get(base + path, timeout=timeout)
         return r.status_code < 500, r.status_code

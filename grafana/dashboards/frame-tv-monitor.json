@@ -1,0 +1,610 @@
+{
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "title": "Rotation Overview",
+      "type": "row"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {}
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "count(count by (filename) (count_over_time({job=\"frame_rotate\"} |= \"Showing \" | pattern `Showing <filename> (` | filename != \"\" [$__range])))",
+          "instant": true,
+          "legendFormat": ""
+        }
+      ],
+      "title": "Images in Rotation",
+      "type": "stat"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {}
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "sum(count_over_time({job=\"frame_rotate\"} |= \"Showing \" [$__range]))",
+          "instant": true,
+          "legendFormat": ""
+        }
+      ],
+      "title": "Total Shows",
+      "type": "stat"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {}
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "sum(count_over_time({job=\"frame_rotate\"} |= \"uploading:\" |= \"done (\" [$__range]))",
+          "instant": true,
+          "legendFormat": ""
+        }
+      ],
+      "title": "Total Uploads",
+      "type": "stat"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "sum(count_over_time({job=\"frame_rotate\"} |= \"Upload interrupted:\" [$__range]))",
+          "instant": true,
+          "legendFormat": ""
+        }
+      ],
+      "title": "Upload Errors",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "title": "Rotation Activity",
+      "type": "row"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 20
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 0,
+        "y": 6
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "sum(count_over_time({job=\"frame_rotate\"} |= \"Showing \" [5m]))",
+          "legendFormat": "Shows per 5m"
+        }
+      ],
+      "title": "Rotations Over Time",
+      "type": "timeseries"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 6
+      },
+      "options": {
+        "dedupStrategy": "none",
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "{job=\"frame_rotate\"} |~ \"interrupted|Error|error|standby\""
+        }
+      ],
+      "title": "Errors & Interruptions",
+      "type": "logs"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "title": "Per-Image Show Counts",
+      "type": "row"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "options": {
+        "legend": {
+          "displayMode": "hidden"
+        },
+        "orientation": "horizontal",
+        "tooltip": {
+          "mode": "single"
+        },
+        "xTickLabelRotation": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "sort_desc(sum by (filename) (count_over_time({job=\"frame_rotate\"} |= \"Showing \" | pattern `Showing <filename> (` | filename != \"\" [$__range])))",
+          "instant": true,
+          "legendFormat": "{{filename}}"
+        }
+      ],
+      "title": "Times Each Image Shown",
+      "type": "barchart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "title": "Crop Pipeline",
+      "type": "row"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {}
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 26
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "sum(count_over_time({job=\"frame_crop\"} |= \"cropped:\" [$__range]))",
+          "instant": true,
+          "legendFormat": ""
+        }
+      ],
+      "title": "Files Cropped",
+      "type": "stat"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {}
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 26
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "sum(count_over_time({job=\"frame_crop\"} |= \"small, copying as-is:\" [$__range]))",
+          "instant": true,
+          "legendFormat": ""
+        }
+      ],
+      "title": "Copied As-Is (small)",
+      "type": "stat"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {}
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 26
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "sum(count_over_time({job=\"frame_crop\"} |= \"new file:\" [$__range]))",
+          "instant": true,
+          "legendFormat": ""
+        }
+      ],
+      "title": "New Files Detected",
+      "type": "stat"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {}
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 26
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "sum(count_over_time({job=\"frame_crop\"} |= \"removed:\" [$__range]))",
+          "instant": true,
+          "legendFormat": ""
+        }
+      ],
+      "title": "Files Removed",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "title": "Crop Detail",
+      "type": "row"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 20
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 14,
+        "x": 0,
+        "y": 31
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "sum(count_over_time({job=\"frame_crop\"} |= \"cropped:\" [10m]))",
+          "legendFormat": "Cropped"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "sum(count_over_time({job=\"frame_crop\"} |= \"small, copying as-is:\" [10m]))",
+          "legendFormat": "Copied as-is"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "sum(count_over_time({job=\"frame_crop\"} |= \"small, captioned:\" [10m]))",
+          "legendFormat": "Captioned (small)"
+        }
+      ],
+      "title": "Crop Activity Over Time",
+      "type": "timeseries"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {}
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 10,
+        "x": 14,
+        "y": 31
+      },
+      "options": {
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Value"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "sort_desc(sum by (src) (count_over_time({job=\"frame_crop\"} | regexp `cropped: (?P<src>\\S+)` | __error__=\"\" [$__range])))",
+          "instant": true,
+          "legendFormat": "{{filename}}"
+        }
+      ],
+      "title": "Files Cropped by Source",
+      "transformations": [
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": [
+              {
+                "desc": true,
+                "displayName": "Value"
+              }
+            ]
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 39
+      },
+      "title": "Recent Logs",
+      "type": "row"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "options": {
+        "dedupStrategy": "none",
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "{job=\"frame_crop\"} |~ \"cropped:|small,|new file:|removed:\""
+        }
+      ],
+      "title": "Recent Crop Activity",
+      "type": "logs"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "options": {
+        "dedupStrategy": "none",
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "expr": "{job=\"frame_rotate\"} |~ \"Showing |uploading:|Upload interrupted\""
+        }
+      ],
+      "title": "Recent Rotation Activity",
+      "type": "logs"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 36,
+  "tags": [
+    "frame-tv"
+  ],
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "title": "Frame TV Monitor",
+  "uid": "frame-tv-monitor",
+  "version": 2
+}

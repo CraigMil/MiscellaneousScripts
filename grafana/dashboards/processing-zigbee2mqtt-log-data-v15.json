@@ -1,0 +1,1837 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "sum by(type) (count_over_time({service_name=\"zigbee2mqtt\", type=~\".*_error\"} [5m]))",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "# of Errors (publish, poll, adapter, ZCL or route)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "neutral": 0
+          },
+          "mappings": [],
+          "max": 25,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 7
+              },
+              {
+                "color": "red",
+                "value": 15
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 11,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": false,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "sum(count_over_time({device=~\".+\", service_name=\"zigbee2mqtt\"} [10s]))",
+          "queryType": "range",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "sum(count_over_time({ job=\"varlogs-zigbee2mqtt\", device_name=~\".+\" }[10s]))",
+          "hide": false,
+          "queryType": "range",
+          "refId": "B"
+        }
+      ],
+      "title": "Requests Per 10 Seconds",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "links": [
+            {
+              "title": "Dive into Poll Errors",
+              "url": "http://192.168.1.48:3000/a/grafana-lokiexplore-app/explore/type/poll_error/logs?from=${${__from}&to=now&var-ds=df7js4300kw74d&var-filters=type%7C%3D%7Cpoll_error&patterns=%5B%5D&var-lineFormat=&var-fields=&var-levels=&var-metadata=&var-jsonFields=&var-patterns=&var-lineFilterV2=&var-lineFilters=&displayedFields=%5B%22friendly_name%22,%22error_code%22%5D&urlColumns=%5B%22Time%22,%22friendly_name%22,%22error_code%22%5D&visualizationType=%22table%22&sortOrder=%22Descending%22&timezone=browser&var-all-fields=&userDisplayedFields=false"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 16,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{service_name=\"zigbee2mqtt\", type=\"poll_error\"} |= ``",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Poll Errors",
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "includeByName": {
+              "Time": true,
+              "attribute": true,
+              "command": true,
+              "device": true
+            },
+            "indexByName": {
+              "Time": 0,
+              "attribute": 2,
+              "command": 1,
+              "device": 3
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 20,
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "sum by(device) (count_over_time({device=~\".+\"} [5m]))\r\n",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "MQTT messages per 5 min avg",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Dive into Route Errors",
+              "url": "http://192.168.1.48:3000/a/grafana-lokiexplore-app/explore/type/route_error/logs?from=${__from}&to=now&var-ds=df7js4300kw74d&var-filters=type%7C%3D%7Croute_error&patterns=%5B%5D&var-lineFormat=&var-fields=&var-levels=&var-metadata=&var-jsonFields=&var-patterns=&var-lineFilterV2=&var-lineFilters=&timezone=browser&var-all-fields=&userDisplayedFields=false&displayedFields=%5B%22friendly_name%22,%22error_code%22%5D&urlColumns=%5B%22Time%22,%22friendly_name%22,%22error_code%22%5D&visualizationType=%22table%22&sortOrder=%22Descending%22"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 15,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "sum by (error_code, friendly_name) (count_over_time({service_name=\"zigbee2mqtt\", type=\"route_error\"} [$__range]))",
+          "queryType": "instant",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "sum by (error_message, device) (count_over_time({service_name=\"zigbee2mqtt\", type=\"publish_error\"} [$__range]))",
+          "hide": false,
+          "queryType": "instant",
+          "refId": "B"
+        }
+      ],
+      "title": "Route Errors",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 1,
+            "barWidthFactor": 0.3,
+            "drawStyle": "bars",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "sum(rate({device=~\".+\", service_name=\"zigbee2mqtt\"} [1s]))",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Requests per second",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic-by-name"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "barAlignment": -1,
+            "barWidthFactor": 0.9,
+            "drawStyle": "bars",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "percent"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Max",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "topk(5, sum by(device) (count_over_time({device=~\".+\", service_name=\"zigbee2mqtt\"} [1m])))",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Top 5 Highest MQTT Messages",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "efdoo4g7u54hsa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "id": 13,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "efdoo4g7u54hsa"
+          },
+          "editorMode": "builder",
+          "expr": "linkquality{job=\"zigbeemqtt\"}",
+          "key": "Q-6dfb8ac7-7ae9-4c4d-b11a-0a2c7fb865ac-0",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Link Quality from Prometheus MQTT Job",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "last_over_time(\r\n  {device=~\".+\", service_name=\"zigbee2mqtt\"} | unwrap linkquality [30s]\r\n) by(device)",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Link Quality for every device",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": [
+                "count"
+              ]
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "labels"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 726
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{device=~\".+\", service_name=\"zigbee2mqtt\", state=\"ON\"} | json color_mode",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Query with Label State == On and Json parsed Label color_mode for testing",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "asc"
+        }
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "bottomk(5, avg by(device) (avg_over_time({device=~\".+\", service_name=\"zigbee2mqtt\"} | unwrap linkquality [5m])))",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Bottom 5 by Link Quality",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 48
+      },
+      "id": 17,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": true,
+        "showControls": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "{service_name=\"zigbee2mqtt\", type=\"unmatched\"} |= ``",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Unmatched Records",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 48
+      },
+      "id": 18,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "sum(count_over_time({service_name=\"zigbee2mqtt\", device=\"F1_SU2_BA_ST101\", type=\"publish_error\"} [24h]))",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "title": "Publish Errors Last Day F1_SU2_BA_ST101",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": -1,
+            "barWidthFactor": 0.9,
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 56
+      },
+      "id": 19,
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Total",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "hideZeros": true,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "sum by(type) (\n  label_replace(\n    count_over_time({service_name=\"zigbee2mqtt\", type=~\".*_error\", type!=\"route_error\"} [$__interval]),\n    \"device\", \"$1\", \"device\", \"(.+)\"\n  )\n)\nor\nsum by(type) (\n  label_replace(\n    count_over_time({service_name=\"zigbee2mqtt\", type=\"route_error\"} [$__interval]),\n    \"device\", \"$1\", \"friendly_name\", \"(.+)\"\n  )\n)",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": "now-7d",
+      "title": "Errors Last 7 Days \u2014 All Devices by Type",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "fields": [
+                "Value"
+              ],
+              "reducers": [
+                "sum"
+              ],
+              "show": true
+            },
+            "inspect": false
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Explore logs for ${__data.fields.device} / ${__data.fields.type}",
+              "url": "http://192.168.1.48:3000/a/grafana-lokiexplore-app/explore/type/${__data.fields.type}/logs?from=${__from}&to=${__to}&var-ds=df7js4300kw74d&var-filters=service_name%7C%3D%7Czigbee2mqtt&var-filters=device%7C%3D%7C${__data.fields.device}&var-filters=type%7C%3D%7C${__data.fields.type}&patterns=%5B%5D&var-lineFormat=&var-fields=&var-levels=&var-metadata=&var-jsonFields=&var-patterns=&var-lineFilterV2=&var-lineFilters=&displayedFields=%5B%22friendly_name%22,%22error_code%22%5D&urlColumns=%5B%22Time%22,%22friendly_name%22,%22error_code%22%5D&visualizationType=%22table%22&sortOrder=%22Descending%22&timezone=browser"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Error Count"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "device"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 300
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "type"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 64
+      },
+      "id": 20,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Value"
+          }
+        ]
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "sum by(device, type) (\n  label_replace(\n    count_over_time({service_name=\"zigbee2mqtt\", type=~\".*_error\", type!=\"route_error\"} [$__range]),\n    \"device\", \"$1\", \"device\", \"(.+)\"\n  )\n)\nor\nsum by(device, type) (\n  label_replace(\n    count_over_time({service_name=\"zigbee2mqtt\", type=\"route_error\"} [$__range]),\n    \"device\", \"$1\", \"friendly_name\", \"(.+)\"\n  )\n)",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": "now-7d",
+      "title": "Error Counts by Device & Type \u2014 Last 14 Days",
+      "transformations": [
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": [
+              {
+                "desc": true,
+                "displayName": "Value"
+              }
+            ]
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": -1,
+            "barWidthFactor": 0.9,
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 72
+      },
+      "id": 21,
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Total",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "hideZeros": true,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "topk(5,\n  sum by(device) (label_replace(count_over_time({service_name=\"zigbee2mqtt\", type=~\".*_error\", type!=\"route_error\"} [$__interval]),\"device\", \"$1\", \"device\", \"(.+)\"))\n  or\n  sum by(device) (label_replace(count_over_time({service_name=\"zigbee2mqtt\", type=\"route_error\"} [$__interval]),\"device\", \"$1\", \"friendly_name\", \"(.+)\"))\n)",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": "now-24h",
+      "title": "Top 5 Devices by Error Count \u2014 Last 24 Hours",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "fields": [
+                "Value"
+              ],
+              "reducers": [
+                "sum"
+              ],
+              "show": true
+            },
+            "inspect": false
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Explore logs for ${__data.fields.device} / ${__data.fields.type}",
+              "url": "http://192.168.1.48:3000/a/grafana-lokiexplore-app/explore/type/${__data.fields.type}/logs?from=${__from}&to=${__to}&var-ds=df7js4300kw74d&var-filters=service_name%7C%3D%7Czigbee2mqtt&var-filters=device%7C%3D%7C${__data.fields.device}&var-filters=type%7C%3D%7C${__data.fields.type}&patterns=%5B%5D&displayedFields=%5B%22friendly_name%22,%22error_code%22%5D&urlColumns=%5B%22Time%22,%22friendly_name%22,%22error_code%22%5D&visualizationType=%22table%22&sortOrder=%22Descending%22&timezone=browser"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Error Count"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "device"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 250
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "type"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 72
+      },
+      "id": 22,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Error Count"
+          }
+        ]
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "sum by(device, type) (label_replace(count_over_time({service_name=\"zigbee2mqtt\", type=~\".*_error\", type!=\"route_error\"} [$__range]),\"device\", \"$1\", \"device\", \"(.+)\"))\nor\nsum by(device, type) (label_replace(count_over_time({service_name=\"zigbee2mqtt\", type=\"route_error\"} [$__range]),\"device\", \"$1\", \"friendly_name\", \"(.+)\"))",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": "now-24h",
+      "title": "Top 5 Devices \u2014 Error Breakdown \u2014 Last 24 Hours",
+      "transformations": [
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": [
+              {
+                "desc": true,
+                "displayName": "Value"
+              }
+            ]
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "dateTimeAsLocal"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 80
+      },
+      "id": 23,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "Time",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "{service_name=\"zigbee2mqtt\"} |= \"Stopped zigbee-herdsman\"",
+          "maxLines": 1,
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": "now-90d",
+      "title": "Last Zigbee2MQTT Restart",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "df7js4300kw74d"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 18,
+        "x": 6,
+        "y": 80
+      },
+      "id": 24,
+      "options": {
+        "content": "<style>\n  .fw-wrap { display: flex; gap: 12px; height: 100%; padding: 4px; }\n  .fw-card {\n    flex: 1;\n    background: linear-gradient(135deg, #1a3a2a 0%, #0f2d1f 100%);\n    border: 1px solid #2d6a4f;\n    border-radius: 8px;\n    padding: 12px 14px;\n    display: flex;\n    flex-direction: column;\n    gap: 8px;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.4);\n  }\n  .fw-device {\n    font-size: 13px;\n    font-weight: 700;\n    color: #52b788;\n    letter-spacing: 0.5px;\n    white-space: nowrap;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    border-bottom: 1px solid #2d6a4f;\n    padding-bottom: 6px;\n  }\n  .fw-time { font-size: 10px; color: #74c69d; opacity: 0.8; }\n  .fw-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }\n  .fw-label { font-size: 9px; color: #74c69d; text-transform: uppercase; letter-spacing: 0.8px; min-width: 30px; }\n  .fw-val-old { font-size: 11px; color: #f4a261; font-family: monospace; background: rgba(244,162,97,0.1); padding: 2px 5px; border-radius: 3px; }\n  .fw-arrow { color: #52b788; font-size: 12px; }\n  .fw-val-new { font-size: 11px; color: #52b788; font-family: monospace; background: rgba(82,183,136,0.15); padding: 2px 5px; border-radius: 3px; font-weight: 600; }\n</style>\n<div class=\"fw-card\">\n  <div class=\"fw-device\">\ud83d\udce1 {{device}}</div>\n  <div class=\"fw-time\">{{date Time \"MMM DD YYYY, HH:mm\"}}</div>\n  <div class=\"fw-row\">\n    <span class=\"fw-label\">Build</span>\n    <span class=\"fw-val-old\">{{old_build}}</span>\n    <span class=\"fw-arrow\">&#x2192;</span>\n    <span class=\"fw-val-new\">{{new_build}}</span>\n  </div>\n  <div class=\"fw-row\">\n    <span class=\"fw-label\">Date</span>\n    <span class=\"fw-val-old\">{{old_date}}</span>\n    <span class=\"fw-arrow\">&#x2192;</span>\n    <span class=\"fw-val-new\">{{new_date}}</span>\n  </div>\n</div>",
+        "contentPartials": [],
+        "defaultContent": "<div style='color:#2d6a4f;padding:8px'>No firmware updates found</div>",
+        "editor": {
+          "format": "auto",
+          "language": "html"
+        },
+        "externalStyles": [],
+        "renderMode": "everyRow",
+        "styles": "\n.panel-content > div {\n  display: flex !important;\n  flex-direction: row !important;\n  gap: 12px !important;\n  height: 100% !important;\n  padding: 4px !important;\n}\n"
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "df7js4300kw74d"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "{service_name=\"zigbee2mqtt\"} |= \"was updated from\" |= \"softwareBuildID\" | regexp `Device '(?P<device>[^']+)' was updated from '\\{\"dateCode\":\"(?P<old_date>[^\"]+)\",\"softwareBuildID\":\"(?P<old_build>[^\"]+)\"\\}' to '\\{\"dateCode\":\"(?P<new_date>[^\"]+)\",\"softwareBuildID\":\"(?P<new_build>[^\"]+)\"\\}'`",
+          "maxLines": 3,
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": "now-90d",
+      "title": "Last 3 Firmware Updates",
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "labels"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "includeByName": {
+              "Time": true,
+              "device": true,
+              "new_build": true,
+              "new_date": true,
+              "old_build": true,
+              "old_date": true
+            },
+            "indexByName": {
+              "Time": 0,
+              "device": 1,
+              "new_build": 3,
+              "new_date": 5,
+              "old_build": 2,
+              "old_date": 4
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": [
+              {
+                "desc": true,
+                "displayName": "Time"
+              }
+            ]
+          }
+        }
+      ],
+      "type": "marcusolsson-dynamictext-panel"
+    }
+  ],
+  "preload": false,
+  "schemaVersion": 42,
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Processing Zigbee2MQTT log data v15",
+  "uid": "zigbee2mqttv15",
+  "version": 1
+}
