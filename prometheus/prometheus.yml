@@ -1,0 +1,119 @@
+# Sample config for Prometheus.
+
+global:
+  scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
+
+  # Attach these labels to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager).
+  external_labels:
+      monitor: 'HomelabCraigMil'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets: ['localhost:9093']
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+
+  - job_name: node
+    # If prometheus-node-exporter is installed, grab stats about the local
+    # machine by default.
+    static_configs:
+      - targets: ['localhost:9100']
+        labels:
+          alias: 'Prometheus Server'
+      - targets: ['192.168.1.71:9100']
+        labels:
+          alias: 'Zigbee2MQTT Server'
+      - targets: ['192.168.1.73:9100']
+        labels:
+          alias: 'HomeAssistant Server'
+      - targets: ['192.168.1.70:9100']
+        labels:
+          alias: 'MQTT Server'
+      - targets: ['192.168.1.47:9100']
+        labels:
+          alias: 'Frigate Server'
+      - targets: ['192.168.1.75:9100']
+        labels:
+          alias: 'Primary Proxmox Server'
+      - targets: ['192.168.1.74:9100']
+        labels:
+          alias: 'Secondary Proxmox Server'
+      - targets: [192.168.1.120:9100]
+        labels:
+          alias: GitHub Runner
+
+
+  - job_name: mqtt_canary
+    static_configs:
+      - targets: ['192.168.1.71:9102']
+        labels:
+          alias: 'MQTT Canary'
+
+
+  - job_name: zigbeemqtt
+    # Read the MQTT stats from mqtt2prometheus docker job
+    static_configs:
+      - targets: ['localhost:9641']
+
+  - job_name: frigatemqtt
+    # Read the Frigate MQTT stats from mqtt2prometheus docker job
+    static_configs:
+      - targets: ['localhost:9642']
+
+  - job_name: shellymqtt
+    # Read the Shelly MQTT data from mqtt2prometheus docker job
+    static_configs:
+      - targets: ['localhost:9643']
+
+  - job_name: homeassistantmqtt
+    # Read the HomeAssistant MQTT data from mqtt2prometheus docker job
+    static_configs:
+      - targets: ['localhost:9644']
+
+  - job_name: wyzebridgdemqtt
+    # Read the HomeAssistant MQTT data from mqtt2prometheus docker job
+    static_configs:
+      - targets: ['localhost:9645']
+
+  - job_name: sysbrokermqtt
+    # Read the $SYS/broker fields and convert to valid outputs
+    static_configs:
+      - targets: ['localhost:9234']
+
+  - job_name: wledmqtt
+    # Read the WLED endpoint
+    static_configs:
+      - targets: ['localhost:9649']
+
+  - job_name: alloy_ingester_on_zigbee2mqtt_server
+    # Read the Alloy endpoint
+    static_configs:
+      - targets: ['192.168.1.71:12345']
+      - targets: [localhost:12345]
+        labels:
+          alias: Grafana VM Alloy
+
+  - job_name: loki_service_on_prometheus_server
+    # Read the Loki endpoint
+    static_configs:
+      - targets: ['192.168.1.48:3100']
+
+
+  - job_name: alloy_on_grafana_vm
+    static_configs:
+      - targets: ['localhost:12345']
+        labels:
+          alias: 'Grafana VM Alloy'
