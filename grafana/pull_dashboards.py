@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """
-Pull all Grafana dashboards to grafana/dashboards/ as JSON files.
+Pull Grafana dashboards to grafana/dashboards/ as JSON files.
+
+Compares the version in Grafana against the local file before overwriting.
+If Grafana is ahead, shows a warning and asks for confirmation.
 
 Usage:
-  python3 grafana/pull_dashboards.py
+  python3 grafana/pull_dashboards.py           # interactive (prompts on divergence)
+  python3 grafana/pull_dashboards.py --force   # overwrite all without prompting
 
 Requires .env with:
   GRAFANA_URL, GRAFANA_USER, GRAFANA_PASSWORD
@@ -13,63 +17,62 @@ import sys
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent.parent))
 
 import json
-import os
-import re
+import argparse
 from pathlib import Path
+from grafana.grafana_client import (
+    list_dashboards, fetch_dashboard, slugify, DASHBOARDS_DIR, local_dashboards
+)
 
-import requests
-from requests.auth import HTTPBasicAuth
-from dotenv import load_dotenv
-
-load_dotenv(Path(__file__).parent.parent / ".env")
-
-GRAFANA_URL  = os.environ["GRAFANA_URL"].rstrip("/")
-GRAFANA_USER = os.environ["GRAFANA_USER"]
-GRAFANA_PASS = os.environ["GRAFANA_PASSWORD"]
-AUTH = HTTPBasicAuth(GRAFANA_USER, GRAFANA_PASS)
-
-OUT_DIR = Path(__file__).parent / "dashboards"
-OUT_DIR.mkdir(exist_ok=True)
-
-
-def slugify(title: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
-
-
-def fetch_all_dashboards():
-    resp = requests.get(f"{GRAFANA_URL}/api/search", params={"type": "dash-db"}, auth=AUTH, timeout=10)
-    resp.raise_for_status()
-    return resp.json()
-
-
-def fetch_dashboard(uid: str) -> dict:
-    resp = requests.get(f"{GRAFANA_URL}/api/dashboards/uid/{uid}", auth=AUTH, timeout=10)
-    resp.raise_for_status()
-    return resp.json()
+DASHBOARDS_DIR.mkdir(exist_ok=True)
 
 
 def main():
-    dashboards = fetch_all_dashboards()
-    if not dashboards:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--force", action="store_true", help="Overwrite local files without prompting")
+    args = parser.parse_args()
+
+    remote = list_dashboards()
+    if not remote:
         print("No dashboards found.")
         return
 
-    print(f"Found {len(dashboards)} dashboard(s).")
-    for item in dashboards:
+    local = local_dashboards()  # {uid: path}
+
+    print(f"Found {len(remote)} dashboard(s) in Grafana.\n")
+
+    for item in remote:
         uid   = item["uid"]
         title = item["title"]
-        data  = fetch_dashboard(uid)
-
-        # Strip the live 'id' — not portable across Grafana instances
-        dashboard_json = data["dashboard"]
-        dashboard_json.pop("id", None)
-
         filename = f"{slugify(title)}.json"
-        path = OUT_DIR / filename
-        path.write_text(json.dumps(dashboard_json, indent=2) + "\n")
-        print(f"  saved: grafana/dashboards/{filename}  (uid={uid})")
+        path = DASHBOARDS_DIR / filename
 
-    print("Done.")
+        remote_dashboard = fetch_dashboard(uid)
+        remote_version   = remote_dashboard.get("version", 0)
+
+        # Check local version if file exists
+        if path.exists():
+            local_dashboard  = json.loads(path.read_text())
+            local_version    = local_dashboard.get("version", 0)
+
+            if remote_version == local_version:
+                print(f"  up to date:  {filename}  (v{remote_version})")
+                continue
+            elif remote_version > local_version:
+                print(f"  DIVERGED:    {filename}  (local v{local_version} → grafana v{remote_version})")
+                if not args.force:
+                    answer = input("               Overwrite local with Grafana version? [y/N] ").strip().lower()
+                    if answer != "y":
+                        print("               Skipped.")
+                        continue
+            else:
+                # local is ahead — local edits not yet pushed
+                print(f"  local ahead: {filename}  (local v{local_version}, grafana v{remote_version}) — skipping")
+                continue
+
+        path.write_text(json.dumps(remote_dashboard, indent=2) + "\n")
+        print(f"  saved:       {filename}  (v{remote_version})")
+
+    print("\nDone.")
 
 
 if __name__ == "__main__":
