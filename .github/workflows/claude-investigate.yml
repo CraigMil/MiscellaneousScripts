@@ -21,10 +21,17 @@ jobs:
         id: gate
         env:
           COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           if [ "$EVENT_NAME" = "issue_comment" ]; then
-            echo "$COMMENT_BODY" | grep -qi "investigate" || { echo "skip=true" >> $GITHUB_OUTPUT; exit 0; }
+            # Skip comments from bots (prevents self-triggering on Claude's own responses)
+            if echo "$COMMENT_AUTHOR" | grep -qi "\[bot\]"; then
+              echo "skip=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+            # Require the comment to be exactly "InvestigateNow" (case-insensitive)
+            echo "$COMMENT_BODY" | grep -qiE "^\s*InvestigateNow\s*$" || { echo "skip=true" >> $GITHUB_OUTPUT; exit 0; }
           fi
           echo "skip=false" >> $GITHUB_OUTPUT
 
@@ -85,7 +92,8 @@ jobs:
           MARKER=~/claude_marker
           touch "$MARKER"
 
-          RESULT=$(claude --dangerously-skip-permissions --print "$PROMPT")
+          RESULT=$(claude --dangerously-skip-permissions --print "$PROMPT" \
+            || echo "⚠️ Claude investigation failed. Check workflow logs for details.")
 
           SESSION_ID=$(find ~/.claude -name "*.jsonl" -newer "$MARKER" -not -path "*/subagents/*" 2>/dev/null | xargs -I{} basename {} .jsonl 2>/dev/null | grep -E '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' | tail -1)
           SESSION_FILE=$(find ~/.claude -name "${SESSION_ID}.jsonl" 2>/dev/null | head -1)
